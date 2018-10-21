@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
 
 public class StreamForward {
@@ -19,13 +21,13 @@ public class StreamForward {
             }
         };
     }
-    public static Runnable toFinalize(final SocketChannel sc1, final SocketChannel sc2) throws IOException{
+    public static Runnable toFinalize(final Channel sc1, final Channel sc2) throws IOException{
         return new Runnable() {
             @Override
             public void run() {
                 try{
-                    if(!sc1.isConnected()) sc1.shutdownInput();
-                    if(!sc2.isConnected()) sc2.shutdownOutput();
+                    sc1.close();
+                    sc2.close();
                 } catch (IOException e) {}
             }
         };
@@ -41,12 +43,12 @@ public class StreamForward {
         forward(in2, out1, toFinalize(s2, s1));
     }
 
-    public static void forward(final SocketChannel sc1, final SocketChannel sc2) throws IOException{
+    public static void forward(final ByteChannel sc1, final ByteChannel sc2) throws IOException{
         forward(sc1, sc2, toFinalize(sc1, sc2));
         forward(sc2, sc1, toFinalize(sc2, sc1));
     }
 
-    public static void forwardOnlyRun(SocketChannel in,SocketChannel out, Runnable callback){
+    public static void forwardOnlyRun(ByteChannel in,ByteChannel out, Runnable callback){
         try{
             ByteBuffer buffer = ByteBuffer.allocate(1024);
 
@@ -61,7 +63,7 @@ public class StreamForward {
         }
     }
 
-    public static void forward(SocketChannel from,SocketChannel to, Runnable callback){
+    public static void forward(ByteChannel from,ByteChannel to, Runnable callback){
         new Thread("xyz.luohaibin.util.StreamForward"){
             @Override
             public void run(){
