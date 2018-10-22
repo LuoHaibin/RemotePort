@@ -9,4 +9,4 @@
 
 主机：
 调用Server server = new Server(CREATURE_HOST, 4959, 8080)，连接服务器CREATURE_HOST的4959端口，用于转发本地8080端口的流量
-调用server.bind(80)，绑定服务器80端口，其他客户机连接服务器80端口都会被反向代理到本地主机的端口8080
+调用server.bind(80)，绑定服务器80端口
