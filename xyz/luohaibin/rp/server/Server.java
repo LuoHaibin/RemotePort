@@ -106,14 +106,7 @@ public class Server extends Socket{
     }
 
     public static void main(String[] agrs) throws Exception{
-//        deamon("103.11.89.69", 4959, 3389, 1080);
-//        deamon("103.11.89.69", 4959, 8069, 8069);
-//        deamon("luohaibin.xyz", 4959, 3389, 3390);
-//        deamon("luohaibin.xyz", 4959, 8069, 8069);
         deamon("127.0.0.1", 4959, 80, 81);
-        //new Server("127.0.0.1", 4959, 80).bind(81);
-
-//        new Server("127.0.0.1", 4959, 80).bind(81);
     }
 
     synchronized void out(int code){
