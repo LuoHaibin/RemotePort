@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
+import java.util.concurrent.TimeoutException;
 
 class Server {
     static final int ALIVE = -1;
@@ -80,12 +81,17 @@ class Server {
         }
     }
 
-    SocketChannel getLink() throws InterruptedException{
+    SocketChannel getLink() throws InterruptedException, TimeoutException {
         newLink();
         Logger.d("id-"+link_id+" 请求新链接");
+        long t = System.currentTimeMillis();
         synchronized (links){
-            while (links.isEmpty())
-                links.wait();
+            while (links.isEmpty()){
+                links.wait(30000);
+                if (System.currentTimeMillis()-t > 30000 && links.isEmpty()){
+                    throw new TimeoutException();
+                }
+            }
             return links.pop();
         }
     }

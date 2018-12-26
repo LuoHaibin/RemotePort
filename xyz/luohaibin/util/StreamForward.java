@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 public class StreamForward {
     private static ExecutorService pool = Executors.newCachedThreadPool(r->new Thread(r, "xyz.luohaibin.util.StreamForward"));
 
-    public static Runnable toFinalize(final Socket s1, final Socket s2) throws IOException{
+    public static Runnable toFinalize(final Socket s1, final Socket s2) {
         return () -> {
             try{
                 if(!s1.isClosed()) s1.shutdownInput();
@@ -22,7 +22,7 @@ public class StreamForward {
             } catch (IOException e) {}
         };
     }
-    public static Runnable toFinalize(final Channel sc1, final Channel sc2) throws IOException{
+    public static Runnable toFinalize(final Channel sc1, final Channel sc2) {
         return () -> {
             try{
                 sc1.close();
@@ -41,7 +41,7 @@ public class StreamForward {
         forward(in2, out1, toFinalize(s2, s1));
     }
 
-    public static void forward(final ByteChannel sc1, final ByteChannel sc2) throws IOException{
+    public static void forward(final ByteChannel sc1, final ByteChannel sc2) {
         forward(sc1, sc2, toFinalize(sc1, sc2));
         forward(sc2, sc1, toFinalize(sc2, sc1));
     }

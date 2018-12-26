@@ -11,6 +11,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 
 public class Port {
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
@@ -44,11 +45,14 @@ public class Port {
                                     server.link_id,
                                     server.host.getHostName()));
                     pool.submit(()->{
-                        try {
+                        try (SocketChannel c = client){
                             SocketChannel link = server.getLink();
                             Logger.i("客户端 id-"+id+":"+client_host.getHostName()+" 获得链接, 耗时 "+ (System.currentTimeMillis()-t) +"ms");
                             StreamForward.forward(link, client);
                         } catch (InterruptedException | IOException ignored) {}
+                        catch (TimeoutException e) {
+                            Logger.i("客户端 id-"+id+":"+client_host.getHostName()+" 获取链接超时");
+                        }
                     });
                 } catch (IOException e) {
                     return;
