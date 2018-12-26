@@ -8,28 +8,26 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class StreamForward {
+    private static ExecutorService pool = Executors.newCachedThreadPool(r->new Thread(r, "xyz.luohaibin.util.StreamForward"));
+
     public static Runnable toFinalize(final Socket s1, final Socket s2) throws IOException{
-        return new Runnable() {
-            @Override
-            public void run() {
-                try{
-                    if(!s1.isClosed()) s1.shutdownInput();
-                    if(!s2.isClosed()) s2.shutdownOutput();
-                } catch (IOException e) {}
-            }
+        return () -> {
+            try{
+                if(!s1.isClosed()) s1.shutdownInput();
+                if(!s2.isClosed()) s2.shutdownOutput();
+            } catch (IOException e) {}
         };
     }
     public static Runnable toFinalize(final Channel sc1, final Channel sc2) throws IOException{
-        return new Runnable() {
-            @Override
-            public void run() {
-                try{
-                    sc1.close();
-                    sc2.close();
-                } catch (IOException e) {}
-            }
+        return () -> {
+            try{
+                sc1.close();
+                sc2.close();
+            } catch (IOException e) {}
         };
     }
 
@@ -64,12 +62,7 @@ public class StreamForward {
     }
 
     public static void forward(ByteChannel from,ByteChannel to, Runnable callback){
-        new Thread("xyz.luohaibin.util.StreamForward"){
-            @Override
-            public void run(){
-                forwardOnlyRun(from, to, callback);
-            }
-        }.start();
+        pool.submit(()->forwardOnlyRun(from, to, callback));
     }
 
     public static void forwardOnlyRun(InputStream in,OutputStream out, Runnable callback){
@@ -86,30 +79,23 @@ public class StreamForward {
     }
 
     public static void forward(InputStream in,OutputStream out, Runnable callback){
-        new Thread("xyz.luohaibin.util.StreamForward"){
-            @Override
-            public void run(){
-                forwardOnlyRun(in, out, callback);
-            }
-        }.start();
+        pool.submit(()->forwardOnlyRun(in, out, callback));
     }
 
     public static void log(OutputStream logOutput, InputStream in, OutputStream out, Runnable callback){
-        new Thread("xyz.luohaibin.util.StreamForward"){
-            @Override
-            public void run(){
-                try{
-                    int readByte;
+        pool.submit(()->{
+            try{
+                int readByte;
 
-                    while((readByte=in.read())!=-1){
-                        logOutput.write(readByte);
-                        out.write(readByte);
-                        out.flush();
-                    }
-                }catch(Exception e){}finally{
-                    callback.run();
+                while((readByte=in.read())!=-1){
+                    logOutput.write(readByte);
+                    out.write(readByte);
+                    out.flush();
                 }
+            }catch(Exception ignored){}
+            finally{
+                callback.run();
             }
-        }.start();
+        });
     }
 }

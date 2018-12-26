@@ -7,30 +7,34 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Creature{
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
 
     final LinkedList<Server> servers = new LinkedList<>();
     {
-        new Thread(()->{
-            try{
-                while(!Thread.interrupted()){
-                    long time = System.currentTimeMillis();
-                    synchronized (servers){
-                        for(int i=0;i<servers.size();i++){
-                            Server server = servers.get(i);
-                            if(server.lastestCorrespond<time-10000){
-                                server.close();
-                                servers.remove(server);
-                                i--;
-                            }
-                        }
+        ScheduledExecutorService pool = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "[RP] check connection");
+            thread.setDaemon(true);
+            return thread;
+        });
+        pool.scheduleWithFixedDelay(()->{
+            long time = System.currentTimeMillis();
+            synchronized (servers){
+                for(int i=0;i<servers.size();i++){
+                    Server server = servers.get(i);
+                    if(server.lastestCorrespond<time-10000){
+                        server.close();
+                        servers.remove(server);
+                        i--;
                     }
-                    Thread.sleep(60000);
                 }
-            } catch (InterruptedException e) {}
-        }, "[RP] check connection").start();
+            }
+        }, 60, 60, TimeUnit.SECONDS);
     }
 
     public Creature(int port) throws IOException {

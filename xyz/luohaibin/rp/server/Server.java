@@ -57,6 +57,7 @@ public class Server extends Socket{
             close();
         }
     });
+
     public Server(String host, int port, int localPort) throws IOException {
         super(host, port);
         this.host=host;
@@ -78,26 +79,28 @@ public class Server extends Socket{
         deamon(host, port, localPort, remotePort, 5);
     }
     private static void deamon(String host, int port, int localPort, int remotePort, int times) {
-        try{
-            new Server(host, port, localPort).bind(remotePort).setCallback(()->{
-                if(times>0)
-                    deamon(host, port, localPort, remotePort, times-1);
-                else{
-                    try {
-                        Thread.sleep(600000);
-                        deamon(host, port, localPort, remotePort, 5);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+        while(true){
+            try{
+                new Server(host, port, localPort).bind(remotePort).setCallback(()->{
+                    if(times>0)
+                        deamon(host, port, localPort, remotePort, times-1);
+                    else{
+                        try {
+                            Thread.sleep(600000);
+                            deamon(host, port, localPort, remotePort, 5);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
+                });
+                break;
+            } catch (IOException e) {
+                Logger.i("服务器 "+host+":"+port+" 不可用");
+                try {
+                    Thread.sleep(600000);
+                } catch (InterruptedException e2) {
+                    Thread.currentThread().interrupt();
                 }
-            });
-        } catch (IOException e) {
-            Logger.i("服务器 "+host+":"+port+" 不可用");
-            try {
-                Thread.sleep(600000);
-                deamon(host, port, localPort, remotePort, 5);
-            } catch (InterruptedException e2) {
-                e2.printStackTrace();
             }
         }
     }
@@ -105,12 +108,12 @@ public class Server extends Socket{
     public static void main(String[] agrs) throws Exception{
 //        deamon("103.11.89.69", 4959, 3389, 1080);
 //        deamon("103.11.89.69", 4959, 8069, 8069);
-        deamon("luohaibin.xyz", 4959, 3389, 3390);
+//        deamon("luohaibin.xyz", 4959, 3389, 3390);
 //        deamon("luohaibin.xyz", 4959, 8069, 8069);
-//        deamon("127.0.0.1", 4959, 80, 81);
+        deamon("127.0.0.1", 4959, 80, 81);
         //new Server("127.0.0.1", 4959, 80).bind(81);
 
-        //new Server("127.0.0.1", 4959, 80).bind(81);
+//        new Server("127.0.0.1", 4959, 80).bind(81);
     }
 
     synchronized void out(int code){

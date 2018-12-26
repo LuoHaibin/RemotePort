@@ -20,61 +20,15 @@ class Server {
     int link_id;
 
     long lastestCorrespond = System.currentTimeMillis();
-    Creature creature;
-    InetAddress host;
-    int remotePost;
-    SocketChannel socketChannel;
-    DataInputStream in;
-    DataOutputStream out;
+    final Creature creature;
+    final InetAddress host;
+    final int remotePost;
+    final SocketChannel socketChannel;
+    final DataInputStream in;
+    final DataOutputStream out;
     final LinkedList<Port> ports = new LinkedList<>();
     final LinkedList<SocketChannel> links = new LinkedList<>();
-    boolean firstCmd;
-    Thread inputThread = new Thread(()->{
-        try {
-            while(!Thread.interrupted()){
-                int cmd = in.readInt();
-                lastestCorrespond = System.currentTimeMillis();
-                if(cmd==ALIVE){
-                    out(ALIVE);
-                }else if(cmd == NEWLINK && !firstCmd) {
-                    boolean isSucceeded = false;
-                    synchronized (creature.servers){
-                        LinkedList<Server> servers = creature.servers;
-                        for(Server server:servers){
-                            if(server!= Server.this
-                                    && host != null && host.equals(server.host)){
-                                servers.remove(Server.this);
-                                out(SUCCESS);
-                                Logger.i("id-"+link_id+":"+host.getHostName()+" 加入 id-"+server.link_id+" 端口储备");
-                                synchronized (server.links){
-                                    server.links.add(socketChannel);
-                                    server.links.notify();
-                                }
-                                return;
-                            }
-                        }
-                    }
-                    out(ERROR);
-                    close();
-                }else if(cmd>=0 && cmd<65536) {
-                    try{
-                        Port p = new Port(cmd, this);
-                        synchronized (ports){
-                            ports.add(p);
-                        }
-                        out(p.getLocalPort());
-                        Logger.i("id-"+link_id+":"+host.getHostName()+" 绑定端口 "+cmd);
-                    }catch(BindException e){
-                        out(cmd+65536);
-                        Logger.i("id-"+link_id+":"+host.getHostName()+" 绑定端口 "+cmd+" 失败");
-                    }
-                }
-                firstCmd = true;
-            }
-        } catch (IOException e) {
-            close();
-        }
-    });
+    final Thread inputThread;
 
     Server(Creature creature, SocketChannel socketChannel) throws IOException{
         link_id = creature.getLinkId();
@@ -85,8 +39,45 @@ class Server {
         out = new DataOutputStream(socket.getOutputStream());
         host = socket.getInetAddress();
         remotePost = socket.getPort();
-        inputThread.setName("[RD] InputThread - " + host.getHostName());
+        inputThread = new Thread(()->{
+            try {
+                boolean firstCmd = true;
+                while(!Thread.interrupted()){
+                    int cmd = in.readInt();
+                    lastestCorrespond = System.currentTimeMillis();
+                    if(cmd==ALIVE){
+                        out(ALIVE);
+                    }else if(cmd == NEWLINK && firstCmd) {
+                        initNewLink();
+                        return;
+                    }else if(cmd>=0 && cmd<65536) {
+                        bind(cmd);
+                    }
+                    firstCmd = false;
+                }
+            } catch (IOException e) {
+                close();
+            }
+        }, "[RD] InputThread - " + host.getHostName());
         inputThread.start();
+    }
+
+    private void bind(int port) throws IOException{
+        try{
+            Port p = new Port(port, this);
+            synchronized (ports){
+                ports.add(p);
+            }
+            out(p.getLocalPort());
+            Logger.i("id-"+link_id+":"+host.getHostName()+" 绑定端口 "+port);
+        }catch(IOException e){
+            if (e instanceof BindException){
+                out(port+65536);
+                Logger.i("id-"+link_id+":"+host.getHostName()+" 绑定端口 "+port+" 失败");
+            }else {
+                throw e;
+            }
+        }
     }
 
     SocketChannel getLink() throws InterruptedException{
@@ -99,8 +90,29 @@ class Server {
         }
     }
 
-    public void newLink() {
+    private void newLink() {
         out(NEWLINK);
+    }
+
+    private void initNewLink() throws IOException{
+        synchronized (creature.servers){
+            LinkedList<Server> servers = creature.servers;
+            for(Server server:servers){
+                if(server!= Server.this
+                        && host != null && host.equals(server.host)){
+                    servers.remove(Server.this);
+                    out(SUCCESS);
+                    Logger.i("id-"+link_id+":"+host.getHostName()+" 加入 id-"+server.link_id+" 端口储备");
+                    synchronized (server.links){
+                        server.links.add(socketChannel);
+                        server.links.notify();
+                    }
+                    return;
+                }
+            }
+        }
+        out(ERROR);
+        throw new IOException();
     }
 
     synchronized void out(int code){

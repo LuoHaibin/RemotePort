@@ -14,22 +14,22 @@ public class Logger {
     }
 
     static public void d(String msg){
-        out(Level.DEBUG, msg);
+        log(Level.DEBUG, msg);
     }
     static public void i(String msg){
-        out(Level.INFO, msg);
+        log(Level.INFO, msg);
     }
     static public void w(String msg){
-        out(Level.WARN, msg);
+        log(Level.WARN, msg);
     }
     static public void e(String msg){
-        out(Level.ERROR, msg);
+        log(Level.ERROR, msg);
     }
     static public void f(String msg){
-        out(Level.FATAL, msg);
+        log(Level.FATAL, msg);
     }
 
-    static void out(Level level,String msg){
+    static void log(Level level,String msg){
         if(Logger.level.ordinal() > level.ordinal())
             return;
         DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
