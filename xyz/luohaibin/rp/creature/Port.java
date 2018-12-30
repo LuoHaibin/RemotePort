@@ -45,11 +45,14 @@ public class Port {
                                     server.link_id,
                                     server.host.getHostName()));
                     pool.submit(()->{
-                        try (SocketChannel c = client){
-                            SocketChannel link = server.getLink();
+                        try {
+                            SocketChannel link = server.getLink(client);
                             Logger.i("客户端 id-"+id+":"+client_host.getHostName()+" 获得链接, 耗时 "+ (System.currentTimeMillis()-t) +"ms");
-                            StreamForward.forward(link, client);
-                        } catch (InterruptedException | IOException ignored) {}
+                            StreamForward.mutualWithFinalize(link, client);
+                        } catch (InterruptedException ignored) {}
+                        catch (IOException e) {
+                            Logger.i("客户端链接已关闭");
+                        }
                         catch (TimeoutException e) {
                             Logger.i("客户端 id-"+id+":"+client_host.getHostName()+" 获取链接超时");
                         }

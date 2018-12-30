@@ -25,7 +25,7 @@ public class Link {
                 SocketChannel local = SocketChannel.open();
                 local.connect(new InetSocketAddress("127.0.0.1", localPort));
                 Logger.d("开始转发流量");
-                StreamForward.forward(local, socketChannel);
+                StreamForward.mutualWithFinalize(local, socketChannel);
             }
         }catch (ConnectException e){
             Logger.e("无法连接本地链接");

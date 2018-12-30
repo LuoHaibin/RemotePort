@@ -81,18 +81,23 @@ class Server {
         }
     }
 
-    SocketChannel getLink() throws InterruptedException, TimeoutException {
+    SocketChannel getLink(SocketChannel client) throws InterruptedException, TimeoutException, IOException {
         newLink();
         Logger.d("id-"+link_id+" 请求新链接");
         long t = System.currentTimeMillis();
         synchronized (links){
+            SocketChannel link;
             while (links.isEmpty()){
                 links.wait(30000);
                 if (System.currentTimeMillis()-t > 30000 && links.isEmpty()){
                     throw new TimeoutException();
                 }
             }
-            return links.pop();
+            if (!client.isConnected()){
+                throw new IOException();
+            }
+            link = links.pop();
+            return link;
         }
     }
 
